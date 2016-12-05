@@ -1,0 +1,31 @@
+{
+  "name": "profiled-signals",
+  "version": "0.0.0",
+  "description": "Basic signalling server used to connect in a controlled maner master and slave nodes in a specific way\"",
+  "main": "server.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ferborva/profiled-signals.git"
+  },
+  "keywords": [
+    "socket.io",
+    "signalling"
+  ],
+  "author": "ferborva",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ferborva/profiled-signals/issues"
+  },
+  "homepage": "https://github.com/ferborva/profiled-signals#readme",
+  "devDependencies": {
+    "deep-freeze": "0.0.1",
+    "expect": "1.20.2",
+    "mocha": "3.2.0"
+  },
+  "dependencies": {
+    "socket.io": "1.7.1"
+  }
+}
