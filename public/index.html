@@ -1,10 +1,93 @@
 <html>
-	<head>
-		<title>Hello Blue!</title>
-		<script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
-	</head>
-	<body>
-		<h1>Hi blu!</h1>
-		<script src="/js/app.js"></script>
-	</body>
+
+<head>
+    <title>Hello Blue!</title>
+    <!-- Compiled and minified CSS -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.8/css/materialize.min.css">
+    <link rel="stylesheet" href="/css/app.css">
+    <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="row">
+            <h4>Room Control</h4>
+        </div>
+        <div id="join-section">
+	        <div class="row">
+	            <label for="name-holder">What is your name?</label>
+	            <input id="name-holder" name="name-holder" type="text" placeholder="Will be used in the virtual room">
+	            <br>
+	            <label for="room-holder">What room do you want to join?</label>
+	            <input id="room-holder" name="room-holder" type="text" placeholder="Room name or code">
+	        </div>
+	        <div class="row">
+	            Join Room as:
+	            <br>
+	            <a class="waves-effect waves-light btn" onclick="BUZZ.Utils.register('teacher')">Teacher</a>
+	            <a class="waves-effect waves-light btn" onclick="BUZZ.Utils.register('student')">Student</a>
+	            <a class="waves-effect waves-light btn" onclick="BUZZ.Utils.register('screen')">Screen</a>
+	        </div>
+        </div>
+        <div id="display-section" class="row">
+        	
+        </div>
+    </div>
+
+
+	<div id="loader" hidden>
+	    <div class="preloader-wrapper big active">
+	        <div class="spinner-layer spinner-blue">
+	            <div class="circle-clipper left">
+	                <div class="circle"></div>
+	            </div>
+	            <div class="gap-patch">
+	                <div class="circle"></div>
+	            </div>
+	            <div class="circle-clipper right">
+	                <div class="circle"></div>
+	            </div>
+	        </div>
+	        <div class="spinner-layer spinner-red">
+	            <div class="circle-clipper left">
+	                <div class="circle"></div>
+	            </div>
+	            <div class="gap-patch">
+	                <div class="circle"></div>
+	            </div>
+	            <div class="circle-clipper right">
+	                <div class="circle"></div>
+	            </div>
+	        </div>
+	        <div class="spinner-layer spinner-yellow">
+	            <div class="circle-clipper left">
+	                <div class="circle"></div>
+	            </div>
+	            <div class="gap-patch">
+	                <div class="circle"></div>
+	            </div>
+	            <div class="circle-clipper right">
+	                <div class="circle"></div>
+	            </div>
+	        </div>
+	        <div class="spinner-layer spinner-green">
+	            <div class="circle-clipper left">
+	                <div class="circle"></div>
+	            </div>
+	            <div class="gap-patch">
+	                <div class="circle"></div>
+	            </div>
+	            <div class="circle-clipper right">
+	                <div class="circle"></div>
+	            </div>
+	        </div>
+	    </div>
+	</div>
+
+    <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.8/js/materialize.min.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+
 </html>
