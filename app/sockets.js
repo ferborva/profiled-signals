@@ -70,16 +70,42 @@ module.exports = function(io) {
             // Manage room leaving
         });
 
+        socket.on('peerReady', function(data) {
+        	var ready = false;
+        	var link = rooms[socket.room].links[data.id];
+        	if (data.type === 'caller') {
+        		link.callerReady = true;
+        		if (link.receiverReady) {
+        			ready = true;
+        		}
+        	} else {
+        		link.receiverReady = true;
+        		if (link.callerReady) {
+        			ready = true;
+        		}
+        	}
+        	if (ready) {
+        		link.caller.emit('initConnection', {id: data.id});
+        	}
+
+        });
+
         socket.on('offer', function(data) {
             // Manage p2p offer transfer
+            var receiver = rooms[socket.room].links[data.id].receiver;
+            receiver.emit('offer', data);
         });
 
         socket.on('answer', function(data) {
             // Manage p2p answer transfer
+            var caller = rooms[socket.room].links[data.id].caller;
+            caller.emit('answer', data);
         });
 
         socket.on('iceCandidate', function(data) {
             // Manage ICE Candidate transfer
+            var endpoint = rooms[socket.room].links[data.id][data.endpoint];
+            endpoint.emit('iceCandidate', data);
         });
 
     });
@@ -198,7 +224,9 @@ function tryPeerConnections(socket) {
 			var newLinkId = uuid();
 			rooms[socket.room].links[newLinkId] = {
 				caller: socket,
-				receiver: screen.socket
+				receiver: screen.socket,
+				callerReady: false,
+				receiverReady: false
 			};
 			socket.emit('prepareConnection', {
 				linkId: newLinkId,

@@ -27,25 +27,38 @@ BUZZ.setupServerListeners = function(server){
 		console.log(peer);
 
 		BUZZ.RTC.setupPeerConnectionListeners(peer);
-		if (data.config) {
-			BUZZ.RTC.getUserMedia(data.config).then(function(stream){
+
+		BUZZ.RTC.getUserMedia(data.config).then(function(stream){
+			if (stream) {
 				peer.peerObject.addStream(stream);
-			}).catch(function(err){
-				console.log('Error on getUserMedia call');
-			})
-		}
+			}
+			BUZZ.server.emit('peerReady', {id: peer.id, type: peer.responsability});
+		}).catch(function(err){
+			console.log('Error on getUserMedia call');
+		});
+	});
+
+	server.on('initConnection', function(data){
+		console.log('initializing connection');
+		var peer = BUZZ.RTC.peers[data.id];
+		BUZZ.RTC.initCall(peer);
 	});
 
 	server.on('offer', function(data){
 		// Manage new Peer offer
+		console.log('Received remote offer');
+		BUZZ.RTC.handleOffer(data);
 	});
 
 	server.on('answer', function(data) {
 		// Manage new Peer answer
+		console.log('Received answer');
+		BUZZ.RTC.handleAnswer(data);
 	})
 
 	server.on('iceCandidate', function(data){
 		// Manage receiving a new ICE Candidate
+		BUZZ.RTC.handleIceCandidate(data);
 	});
 }
 
@@ -64,7 +77,6 @@ BUZZ.Utils = {
 				BUZZ.Utils.alertError(err);
 				return console.log('Error during registration');
 			}
-
 			console.log(resp.msg);
 			BUZZ.Utils.unsetLoading();
 			BUZZ.Utils.setStatus('in');
@@ -114,22 +126,95 @@ BUZZ.RTC = {
 
 	localStreams: {},
 
+	ICE: {
+	  'iceServers': [
+	    {
+	      'url': 'stun:stun.l.google.com:19302'
+	    },
+	    {
+	      'url': 'turn:192.158.29.39:3478?transport=udp',
+	      'credential': 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
+	      'username': '28224511:1379330808'
+	    },
+	    {
+	      'url': 'turn:192.158.29.39:3478?transport=tcp',
+	      'credential': 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
+	      'username': '28224511:1379330808'
+	    }
+	  ]
+	},
+
 	createPeerConnection: function(data) {
-		var newPeerConnection = RTCPeerConnection(null);
+		var newPeerConnection = RTCPeerConnection(BUZZ.RTC.ICE);
 		return BUZZ.RTC.peers[data.linkId] = {
 			peerObject: newPeerConnection,
 			responsability: data.responsability,
 			config: data.config,
-			streams: []
+			streams: [],
+			id: data.linkId
 		};
 	},
 
 	setupPeerConnectionListeners: function(peerInfo){
-		console.log(peerInfo.peerObject);
+		peerInfo.peerObject.onaddstream = function(stream){
+			console.log(stream);
+			console.log('received a new remote stream');
+			var vid = document.createElement('video');
+			vid.autoplay = true;
+			vid.controls = true;
+			vid.muted = true;
+			vid.src = window.URL.createObjectURL(stream.stream);
+			document.body.appendChild(vid);
+		};
+
+		peerInfo.peerObject.onicecandidate = function(ice){
+			console.log(ice);
+			BUZZ.server.emit('iceCandidate', {id: peerInfo.id, candidate: ice.candidate, endpoint: peerInfo.responsability === 'caller' ? 'receiver' : 'caller'});
+		};
+	},
+
+	initCall: function(peer) {
+		peer.peerObject.createOffer(function(offer){
+			console.log('New offer created');
+			peer.peerObject.setLocalDescription(offer);
+			BUZZ.server.emit('offer', {id: peer.id, offer: offer});
+		}, function(err){
+			// Handle error
+		});	
+	},
+
+	handleOffer: function(data){
+		var peer = BUZZ.RTC.peers[data.id];
+		peer.peerObject.setRemoteDescription(data.offer);
+		peer.peerObject.createAnswer(function(answer){
+			peer.peerObject.setLocalDescription(answer);
+			BUZZ.server.emit('answer', {id: peer.id, answer: answer});
+		}, function(err){
+			// Handle answer creation error
+		})
+	},
+
+	handleAnswer: function(data){
+		var peer = BUZZ.RTC.peers[data.id];
+		peer.peerObject.setRemoteDescription(data.answer);
+	},
+
+	handleIceCandidate: function(data) {
+		var peer = BUZZ.RTC.peers[data.id];
+		if (data.candidate) {
+			peer.peerObject.addIceCandidate(new RTCIceCandidate(data.candidate)).then(function(){
+				console.log('Ice Candidate added correctly');
+			}, function(){
+				console.log('Error on add remote ice candidate');
+			});
+		}
 	},
 
 	getUserMedia: function(config){
 		return new Promise(function(resolve, reject) {
+			if (!config) {
+				return resolve(null);
+			}
 			window.navigator.getUserMedia(config, function(stream){
 				console.log('Local Stream correctly obtained');
 				BUZZ.RTC.localStreams[JSON.stringify(config)] = stream;
