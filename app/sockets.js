@@ -45,6 +45,7 @@ module.exports = function(io) {
             		delete teachers[socket.id];
 		            if (socket.room) {
 		            	delete rooms[socket.room].teacher;
+		            	informOfTeacherGone(socket.room);
 		            }
 		            console.log('VR:: Teacher exited from '.concat(socket.room, ' room'));
             		break;
@@ -85,6 +86,9 @@ module.exports = function(io) {
         		}
         	}
         	if (ready) {
+        		if (link.caller.type === 'student') {
+        			saveLinkedStatus(link.caller.id, link.receiver.id, socket.room);
+        		}
         		link.caller.emit('initConnection', {id: data.id});
         	}
 
@@ -154,7 +158,7 @@ function setupNewPeer(data, socket){
 				var userData = {
 					socket: socket,
 					name: data.name,
-					screenlink: null,
+					screenlink: false,
 				};
 
 				room.students[socket.id] = userData;
@@ -189,7 +193,7 @@ function setupNewPeer(data, socket){
 				var screenData = {
 					socket: socket,
 					name: data.name,
-					screenlink: null,
+					screenlink: false,
 					reserved: false
 				};
 
@@ -234,7 +238,8 @@ function tryPeerConnections(socket) {
 				config: {
 					audio: true,
 					video: true
-				}
+				},
+				origin: 'screen'
 			});
 			screen.socket.emit('prepareConnection', {
 				linkId: newLinkId,
@@ -243,13 +248,105 @@ function tryPeerConnections(socket) {
 					audio: true,
 					video: true
 				}
-			})
+			});
+		}
+
+		var teacher = rooms[socket.room].teacher;
+		// If teacher is present
+		if (teacher) {
+			var newLinkId = uuid();
+			rooms[socket.room].links[newLinkId] = {
+				caller: teacher.socket,
+				receiver: socket,
+				callerReady: false,
+				receiverReady: false
+			};
+			teacher.socket.emit('prepareConnection', {
+				linkId: newLinkId,
+				responsability: 'caller',
+				config: {
+					audio: true,
+					video: true
+				}
+			});
+			socket.emit('prepareConnection', {
+				linkId: newLinkId,
+				responsability: 'receiver',
+				config: null,
+				origin: 'teacher'
+			});
+		}
+	} else if (socket.type === 'teacher') {
+		console.log('teacher accessed')
+		// Connect to all students
+		var students = rooms[socket.room].students;
+		// If teacher is present
+		if (students) {
+			console.log('Available students');
+			console.log(students);
+			for (let student in students) {
+				console.log('Being going through students');
+				console.log(students[student]);
+				var newLinkId = uuid();
+				rooms[socket.room].links[newLinkId] = {
+					caller: socket,
+					receiver: students[student].socket,
+					callerReady: false,
+					receiverReady: false
+				};
+				socket.emit('prepareConnection', {
+					linkId: newLinkId,
+					responsability: 'caller',
+					config: {
+						audio: true,
+						video: true
+					}
+				});
+				students[student].socket.emit('prepareConnection', {
+					linkId: newLinkId,
+					responsability: 'receiver',
+					config: null,
+					origin: 'teacher'
+				});
+			}
+		}
+	} else if (socket.type === 'screen') {
+		// Connect to a screenless student
+		var unlinkedStudent = getUnlinkedStudent(socket.room);
+		if (unlinkedStudent) {
+			// Set state of the screen as reserved in order to avoid other peers from requesting it
+			rooms[socket.room].screens[socket.id].reserved = true;
+
+			let newLinkId = uuid();
+			rooms[socket.room].links[newLinkId] = {
+				caller: unlinkedStudent.socket,
+				receiver: socket,
+				callerReady: false,
+				receiverReady: false
+			};
+			unlinkedStudent.socket.emit('prepareConnection', {
+				linkId: newLinkId,
+				responsability: 'caller',
+				config: {
+					audio: true,
+					video: true
+				},
+				origin: 'screen'
+			});
+			socket.emit('prepareConnection', {
+				linkId: newLinkId,
+				responsability: 'receiver',
+				config: {
+					audio: true,
+					video: true
+				}
+			});
 		}
 	}
 	return;
 }
 
-function getFreeScreen(room){
+function getFreeScreen(room) {
 	const screens = rooms[room].screens;
 	console.log('Screens: ');
 	console.log(screens);
@@ -266,4 +363,33 @@ function getFreeScreen(room){
 		return available;
 	}
 	return null;
+}
+
+function getUnlinkedStudent(room) {
+	var students = rooms[room].students;
+	var acc = [];
+	if (students) {
+		console.log('LETS CHECKOUT ALL THE AVAILABLE STUDENTS');
+		console.log(students);
+		for (let student in students) {
+			if (!students[student].screenlink) {
+				return students[student];
+			}
+		}
+	}
+	return null;
+}
+
+
+function saveLinkedStatus(studentId, screenId, room) {
+	var caller = rooms[room].students[studentId];
+	var receiver = rooms[room].screens[screenId];
+	caller.screenlink = true;
+	receiver.screenlink = true;
+}
+
+
+
+function informOfTeacherGone(room) {
+	// Broadcast message to all linked students
 }

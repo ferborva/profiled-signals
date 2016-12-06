@@ -79,6 +79,7 @@ BUZZ.Utils = {
 			}
 			console.log(resp.msg);
 			BUZZ.Utils.unsetLoading();
+			BUZZ.Utils.prepViewZone(type);
 			BUZZ.Utils.setStatus('in');
 		}
 		BUZZ.server.emit('register', opts, callback);
@@ -115,6 +116,25 @@ BUZZ.Utils = {
 
 	alertError: function(msg){
 		window.alert(msg);
+	},
+
+	prepViewZone: function(type){
+		var titleEl = document.getElementById('view-title');
+		var displaySection = document.getElementById('display-section');
+		switch (type) {
+			case 'teacher':
+				titleEl.innerHTML = 'Teacher View';
+				displaySection.classList = 'teacher';
+				break;
+			case 'student':
+				titleEl.innerHTML = 'Student View';
+				displaySection.classList = 'student';
+				break;
+			case 'screen':
+				titleEl.innerHTML = 'Tile View';
+				displaySection.classList = 'screen';
+				break;
+		}
 	}
 
 };
@@ -151,7 +171,8 @@ BUZZ.RTC = {
 			responsability: data.responsability,
 			config: data.config,
 			streams: [],
-			id: data.linkId
+			id: data.linkId,
+			origin: data.origin || null
 		};
 	},
 
@@ -159,12 +180,27 @@ BUZZ.RTC = {
 		peerInfo.peerObject.onaddstream = function(stream){
 			console.log(stream);
 			console.log('received a new remote stream');
+			var div = document.createElement('div');
 			var vid = document.createElement('video');
 			vid.autoplay = true;
 			vid.controls = true;
 			vid.muted = true;
+			vid.id = peerInfo.id;
+			vid.classList += ' ' + (peerInfo.origin || '');
 			vid.src = window.URL.createObjectURL(stream.stream);
-			document.body.appendChild(vid);
+			var container = document.getElementById('display-section');
+			div.appendChild(vid);
+			container.appendChild(div);
+
+			if (peerInfo.origin === 'teacher') {
+				var span = document.createElement('span');
+				span.innerHTML = 'Teacher\'s screen/camera';
+				div.appendChild(span);
+			} else if (peerInfo.origin === 'screen') {
+				var span = document.createElement('span');
+				span.innerHTML = 'Tile camera view';
+				div.appendChild(span);
+			}
 		};
 
 		peerInfo.peerObject.onicecandidate = function(ice){
