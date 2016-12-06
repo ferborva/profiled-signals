@@ -65,7 +65,10 @@ BUZZ.setupServerListeners = function(server){
 
 BUZZ.Utils = {
 
+	userType: '',
+
 	register: function(type){
+		BUZZ.Utils.userType = type;
 		var opts = {
 			type: type,
 			name: BUZZ.Utils.getName(),
@@ -124,15 +127,32 @@ BUZZ.Utils = {
 		switch (type) {
 			case 'teacher':
 				titleEl.innerHTML = 'Teacher View';
-				displaySection.classList = 'teacher';
+				displaySection.classList = 'teacher row valign-wrapper';
+
+				// Get local stream
+				getScreenConstraints(function(error, screen_constraints) {
+			        if(error) {
+			            return alert(error);
+			        }
+			        
+			        console.log('screen_constraints', screen_constraints);
+			        
+			        navigator.getUserMedia = navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+			        navigator.getUserMedia({ video: screen_constraints }, function(stream){
+						console.log('Local Stream correctly obtained');
+						BUZZ.RTC.localStreams.screenShare = stream;
+					}, function(err){
+						console.log('Error:: Issue trying to get local stream. Probably permission has been denied');
+					});
+			    });
 				break;
 			case 'student':
 				titleEl.innerHTML = 'Student View';
-				displaySection.classList = 'student';
+				displaySection.classList = 'student row valign-wrapper';
 				break;
 			case 'screen':
 				titleEl.innerHTML = 'Tile View';
-				displaySection.classList = 'screen';
+				displaySection.classList = 'screen row valign-wrapper';
 				break;
 		}
 	}
@@ -193,10 +213,12 @@ BUZZ.RTC = {
 			container.appendChild(div);
 
 			if (peerInfo.origin === 'teacher') {
+				div.classList = 'teacher valign';
 				var span = document.createElement('span');
 				span.innerHTML = 'Teacher\'s screen/camera';
 				div.appendChild(span);
 			} else if (peerInfo.origin === 'screen') {
+				div.classList = 'screen valign';
 				var span = document.createElement('span');
 				span.innerHTML = 'Tile camera view';
 				div.appendChild(span);
@@ -251,14 +273,43 @@ BUZZ.RTC = {
 			if (!config) {
 				return resolve(null);
 			}
-			window.navigator.getUserMedia(config, function(stream){
-				console.log('Local Stream correctly obtained');
-				BUZZ.RTC.localStreams[JSON.stringify(config)] = stream;
-				resolve(stream);
-			}, function(err){
-				console.log('Error:: Issue trying to get local stream. Probably permission has been denied');
-				reject(err);
-			});
+
+			if (BUZZ.Utils.userType === 'teacher') {
+				if (BUZZ.RTC.localStreams.screenShare) {
+					resolve(BUZZ.RTC.localStreams.screenShare);
+				} else {
+					getScreenConstraints(function(error, screen_constraints) {
+				        if(error) {
+				            return alert(error);
+				        }
+				        
+				        console.log('screen_constraints', screen_constraints);
+				        if (BUZZ.RTC.localStreams.screenShare) {
+							resolve(BUZZ.RTC.localStreams.screenShare);
+						} else {
+					        navigator.getUserMedia = navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+					        navigator.getUserMedia({ video: screen_constraints }, function(stream){
+								console.log('Local Stream correctly obtained');
+								BUZZ.RTC.localStreams.screenShare = stream;
+								resolve(stream);
+							}, function(err){
+								console.log('Error:: Issue trying to get local stream. Probably permission has been denied');
+								reject(err);
+							});
+					    }
+				    });
+				}
+			} else {
+				window.navigator.getUserMedia(config, function(stream){
+					console.log('Local Stream correctly obtained');
+					BUZZ.RTC.localStreams[JSON.stringify(config)] = stream;
+					resolve(stream);
+				}, function(err){
+					console.log('Error:: Issue trying to get local stream. Probably permission has been denied');
+					reject(err);
+				});
+			}
+
 		});
 	}
 }
