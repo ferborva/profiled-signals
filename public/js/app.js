@@ -4,6 +4,7 @@ BUZZ.peers = {};
 
 var joinSection = document.getElementById('join-section');
 var displaySection = document.getElementById('display-section');
+var leaveContainer = document.getElementById('leave-container');
 
 // Upon loading all resources init the communication channel
 window.addEventListener("load", function(event) {
@@ -63,9 +64,11 @@ BUZZ.setupServerListeners = function(server){
 
 	server.on('teacherLeft', function(data){
 		BUZZ.Utils.removeTeacherScreen();
+		BUZZ.RTC.closeTeacherPeer();
 	});
 
 	server.on('removeStudentScreenStream', function(data){
+		console.log('Student left');
 		BUZZ.Utils.removeStudentOrScreen();
 	});
 }
@@ -97,6 +100,13 @@ BUZZ.Utils = {
 		BUZZ.Utils.setLoading();
 	},
 
+	leaveRoom: function(){
+		BUZZ.server.emit('leaveRoom');
+		BUZZ.Utils.setStatus('out');
+		BUZZ.Utils.removeTeacherScreen();
+		BUZZ.Utils.removeStudentOrScreen();
+	},
+
 	getName: function(){
 		return document.getElementById('name-holder').value;
 	},
@@ -118,10 +128,10 @@ BUZZ.Utils = {
 	setStatus: function(status){
 		if (status === 'in') {
 			joinSection.hidden = true;
-			displaySection.hidden = false;
+			leaveContainer.hidden = false;
 		} else {
 			joinSection.hidden = false;
-			displaySection.hidden = true;
+			leaveContainer.hidden = true;
 		}
 	},
 

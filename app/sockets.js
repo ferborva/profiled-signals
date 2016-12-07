@@ -45,7 +45,7 @@ module.exports = function(io) {
             		delete teachers[socket.id];
 		            if (socket.room) {
 		            	delete rooms[socket.room].teacher;
-		            	informOfTeacherGone(socket.room);
+		            	informOfTeacherGone(socket);
 		            }
 		            console.log('VR:: Teacher exited from '.concat(socket.room, ' room'));
             		break;
@@ -71,6 +71,32 @@ module.exports = function(io) {
 
         socket.on('leaveRoom', function(data) {
             // Manage room leaving
+            switch (socket.type) {
+            	case 'teacher':
+            		delete teachers[socket.id];
+		            if (socket.room) {
+		            	delete rooms[socket.room].teacher;
+		            	informOfTeacherGone(socket);
+		            }
+		            console.log('VR:: Teacher exited from '.concat(socket.room, ' room'));
+            		break;
+            	case 'student':
+            		delete students[socket.id];
+            		if (socket.room) {
+		            	delete rooms[socket.room].students[socket.id];
+		            	removeStudentScreenLink(socket);
+		            }
+		            console.log('VR:: Student exited from '.concat(socket.room, ' room'));
+            		break;
+            	case 'screen':
+            		delete screens[socket.id];
+            		if (socket.room) {
+		            	delete rooms[socket.room].screens[socket.id];
+		            	removeStudentScreenLink(socket);
+		            }
+		            console.log('VR:: Screen exited from '.concat(socket.room, ' room'));
+            		break;
+            }
         });
 
         socket.on('peerReady', function(data) {
@@ -392,9 +418,9 @@ function saveLinkedStatus(studentId, screenId, room) {
 
 
 
-function informOfTeacherGone(room) {
+function informOfTeacherGone(teacher) {
 	// Broadcast message to all linked students
-	var students = rooms[room].students;
+	var students = rooms[teacher.room].students;
 
 	for (let student in students) {
 		students[student].socket.emit('teacherLeft');
@@ -416,10 +442,9 @@ function removeStudentScreenLink(socket){
 		var linkData = links[link];
 		if (linkData[responsability].id === id) {
 			var linkedSocket = linkData[linkedResponsability];
-			linkedSocket.emit('removeStudentScreenStream');
+			linkedSocket.emit('removeStudentScreenStream', {linkId: link});
 			resetLinkedState(linkedSocket.type, linkedSocket.id, room);
 			delete links[link];
-			return;
 		}
 	}
 }
