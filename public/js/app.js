@@ -1,3 +1,21 @@
+console.log('================================================');
+console.log(' ____                   _____                   ');
+console.log('|    \\ ___ _____ ___   |  _  |___ _ _ _ ___ ___ ');
+console.log('|  |  | -_|     | . |  |   __| . | | | | -_|  _|');
+console.log('|____/|___|_|_|_|___|  |__|  |___|_____|___|_| ');
+console.log('================================================');
+
+console.log(' ');
+console.log('Welcome to my jungle!');
+console.log(' ');
+console.log(' ');
+console.log(' ');
+
+
+
+
+
+
 var BUZZ = {};
 BUZZ.server = '';
 BUZZ.peers = {};
@@ -68,8 +86,8 @@ BUZZ.setupServerListeners = function(server){
 	});
 
 	server.on('removeStudentScreenStream', function(data){
-		console.log('Student left');
 		BUZZ.Utils.removeStudentOrScreen();
+		BUZZ.RTC.closeStudentScreenPeer();
 	});
 }
 
@@ -183,8 +201,7 @@ BUZZ.Utils = {
 	},
 
 	removeStudentOrScreen: function(){
-		var div
-		console.log(BUZZ.Utils.userType);
+		var div;
 		if (BUZZ.Utils.userType === 'screen') {
 			div = document.querySelector('.student');
 		} else {
@@ -305,6 +322,39 @@ BUZZ.RTC = {
 			}, function(){
 				console.log('Error on add remote ice candidate');
 			});
+		}
+	},
+
+	closeTeacherPeer: function(){
+		var peers = BUZZ.RTC.peers;
+		var peer;
+		for (peer in peers) {
+			if (peers[peer].origin === 'teacher') {
+				var peerInfo = peers[peer];
+				peerInfo.peerObject.close();
+				delete BUZZ.RTC.peers[peer];
+			}
+		}
+	},
+
+	closeStudentScreenPeer: function(){
+		var peers = BUZZ.RTC.peers;
+		if (BUZZ.Utils.userType === 'screen') {
+			for (peer in peers) {
+				if (peers[peer].origin === null) {
+					var peerInfo = peers[peer];
+					peerInfo.peerObject.close();
+					delete BUZZ.RTC.peers[peer];
+				}
+			}
+		} else {
+			for (peer in peers) {
+				if (peers[peer].origin === 'screen') {
+					var peerInfo = peers[peer];
+					peerInfo.peerObject.close();
+					delete BUZZ.RTC.peers[peer];
+				}
+			}
 		}
 	},
 

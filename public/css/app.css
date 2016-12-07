@@ -11,14 +11,6 @@
 	padding-top: 250px; 
 }
 
-#display-section.screen {
-	width: 100%;
-	text-align: center;
-}
-
-#display-section.screen video {
-	width: 100%;
-}
 
 
 #display-section.student {
@@ -40,4 +32,18 @@
 #display-section.student div video{
 	width: 100%;
 	max-height: 500px;
+}
+
+
+#display-section.screen {
+	width: 100%;
+	text-align: center;
+}
+
+#display-section.screen div.student {
+	width: 100%;
+}
+
+#display-section.screen div.student video{
+	width: 100%;
 }
