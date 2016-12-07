@@ -60,6 +60,14 @@ BUZZ.setupServerListeners = function(server){
 		// Manage receiving a new ICE Candidate
 		BUZZ.RTC.handleIceCandidate(data);
 	});
+
+	server.on('teacherLeft', function(data){
+		BUZZ.Utils.removeTeacherScreen();
+	});
+
+	server.on('removeStudentScreenStream', function(data){
+		BUZZ.Utils.removeStudentOrScreen();
+	});
 }
 
 
@@ -155,6 +163,26 @@ BUZZ.Utils = {
 				displaySection.classList = 'screen row valign-wrapper';
 				break;
 		}
+	},
+
+	removeTeacherScreen: function(){
+		var div = document.querySelector('.teacher');
+		if (div) {
+			div.parentElement.removeChild(div);
+		}
+	},
+
+	removeStudentOrScreen: function(){
+		var div
+		console.log(BUZZ.Utils.userType);
+		if (BUZZ.Utils.userType === 'screen') {
+			div = document.querySelector('.student');
+		} else {
+			div = document.querySelector('.screen');
+		}
+		if (div && div.nodeName === 'DIV') {
+			div.parentElement.removeChild(div);
+		}
 	}
 
 };
@@ -222,6 +250,8 @@ BUZZ.RTC = {
 				var span = document.createElement('span');
 				span.innerHTML = 'Tile camera view';
 				div.appendChild(span);
+			} else {
+				div.classList = 'student';
 			}
 		};
 

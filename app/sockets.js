@@ -53,6 +53,7 @@ module.exports = function(io) {
             		delete students[socket.id];
             		if (socket.room) {
 		            	delete rooms[socket.room].students[socket.id];
+		            	removeStudentScreenLink(socket);
 		            }
 		            console.log('VR:: Student exited from '.concat(socket.room, ' room'));
             		break;
@@ -60,6 +61,7 @@ module.exports = function(io) {
             		delete screens[socket.id];
             		if (socket.room) {
 		            	delete rooms[socket.room].screens[socket.id];
+		            	removeStudentScreenLink(socket);
 		            }
 		            console.log('VR:: Screen exited from '.concat(socket.room, ' room'));
             		break;
@@ -392,4 +394,43 @@ function saveLinkedStatus(studentId, screenId, room) {
 
 function informOfTeacherGone(room) {
 	// Broadcast message to all linked students
+	var students = rooms[room].students;
+
+	for (let student in students) {
+		students[student].socket.emit('teacherLeft');
+	}
+}
+
+
+function removeStudentScreenLink(socket){
+	var id = socket.id;
+	var type = socket.type;
+	var room = socket.room;
+
+	var responsability = (type === 'student') ? 'caller' : 'receiver';
+	var linkedResponsability = (type !== 'student') ? 'caller' : 'receiver';
+
+	var links = rooms[room].links;
+
+	for (let link in links) {
+		var linkData = links[link];
+		if (linkData[responsability].id === id) {
+			var linkedSocket = linkData[linkedResponsability];
+			linkedSocket.emit('removeStudentScreenStream');
+			resetLinkedState(linkedSocket.type, linkedSocket.id, room);
+			delete links[link];
+			return;
+		}
+	}
+}
+
+function resetLinkedState(type, id, room){
+	if (type === 'screen') {
+		var screen = rooms[room].screens[id];
+		screen.reserved = false;
+		screen.screenlink = false;
+	} else {
+		var student = rooms[room].students[id];
+		student.screenlink = false;
+	}
 }
