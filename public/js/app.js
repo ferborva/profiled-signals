@@ -165,8 +165,11 @@ BUZZ.Utils = {
 				titleEl.innerHTML = 'Teacher View';
 				displaySection.classList = 'teacher row valign-wrapper';
 
+				BUZZ.RTC.activeGetStreamRequest = true;
 				// Get local stream
 				getScreenConstraints(function(error, screen_constraints) {
+
+
 			        if(error) {
 			            return alert(error);
 			        }
@@ -177,8 +180,10 @@ BUZZ.Utils = {
 			        navigator.getUserMedia({ video: screen_constraints }, function(stream){
 						console.log('Local Stream correctly obtained');
 						BUZZ.RTC.localStreams.screenShare = stream;
+						BUZZ.RTC.activeGetStreamRequest = false;
 					}, function(err){
 						console.log('Error:: Issue trying to get local stream. Probably permission has been denied');
+						BUZZ.RTC.activeGetStreamRequest = false;
 					});
 			    });
 				break;
@@ -376,6 +381,8 @@ BUZZ.RTC = {
 		}
 	},
 
+	activeGetStreamRequest: false,
+
 	getUserMedia: function(config){
 		return new Promise(function(resolve, reject) {
 			if (!config) {
@@ -384,8 +391,18 @@ BUZZ.RTC = {
 
 			if (BUZZ.Utils.userType === 'teacher') {
 				if (BUZZ.RTC.localStreams.screenShare) {
+					console.log('STREAM ALREADY AVAILABLE');
 					resolve(BUZZ.RTC.localStreams.screenShare);
+				} else if (BUZZ.RTC.activeGetStreamRequest) {
+					// Wait for the stream to be obtained and then resolve
+					console.log('ACTIVE REQUEST');
+					setInterval(function(){
+						if (BUZZ.RTC.localStreams.screenShare) {
+							resolve(BUZZ.RTC.localStreams.screenShare);
+						}
+					}, 300);
 				} else {
+					console.log('ASK TEACHER FOR HIS LOCAL STREAM');
 					getScreenConstraints(function(error, screen_constraints) {
 				        if(error) {
 				            return alert(error);
