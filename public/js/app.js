@@ -219,6 +219,24 @@ BUZZ.RTC = {
 
 	peers: {},
 
+	getStats: function(){
+		var peers = BUZZ.RTC.peers;
+		for (var peer in peers) {
+			peers[peer].peerObject.getStats(function(stats) {
+				stats.result().forEach(function(report) {
+					var standardStats = {
+						id: report.id,
+						type: report.type
+					};
+					report.names().forEach(function(name) {
+						standardStats[name] = report.stat(name);
+					});
+					console.log(standardStats);
+				});
+			});
+		}
+	},
+
 	localStreams: {},
 
 	ICE: {
@@ -240,7 +258,7 @@ BUZZ.RTC = {
 	},
 
 	createPeerConnection: function(data) {
-		var newPeerConnection = RTCPeerConnection(BUZZ.RTC.ICE);
+		var newPeerConnection = new RTCPeerConnection(BUZZ.RTC.ICE);
 		return BUZZ.RTC.peers[data.linkId] = {
 			peerObject: newPeerConnection,
 			responsability: data.responsability,
@@ -390,7 +408,7 @@ BUZZ.RTC = {
 				    });
 				}
 			} else {
-				window.navigator.getUserMedia(config, function(stream){
+				window.navigator.mediaDevices.getUserMedia(config).then(function(stream){
 					console.log('Local Stream correctly obtained');
 					BUZZ.RTC.localStreams[JSON.stringify(config)] = stream;
 					resolve(stream);
